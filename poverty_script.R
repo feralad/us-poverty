@@ -347,8 +347,8 @@ us_poverty_data <- nested_poverty_data %>%
   unnest(cols = c(data)) %>%
   ungroup() %>%
   filter(geo_level == "us") %>%
-  # Geometry column is not needed, nor is NAME because it is duplicated by country_n
-  select(-c("geometry", "NAME")) %>%
+  # Geometry column is not needed
+  select(-geometry) %>%
   relocate(race_eth_s, .before = race_eth_f) %>%
   arrange(sore)
 
@@ -397,7 +397,9 @@ state_poverty_data <- state_county_nested_poverty_data %>%
   filter(geo_level == "state_territory") %>%
   # Geometry column is not needed
   select(-geometry) %>%
-  rename(state_n = NAME) %>% 
+  mutate(state_n = NAME) %>%
+  relocate(race_eth_s, .before = race_eth_f) %>%
+  relocate(state_n, .after = NAME) %>%
   arrange(GEOID, sore)
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -415,6 +417,7 @@ county_nested_poverty_data <- state_county_nested_poverty_data %>%
                        delim = ", ", 
                        names = c("county_s", "state_n"),
                        cols_remove = FALSE) %>%
+  mutate(NAME = county_s) %>%
   # Group by race/ethnicity and state
   group_by(race_eth_s, state_n) %>%
   nest() %>%
@@ -446,6 +449,7 @@ county_poverty_data <- county_nested_poverty_data %>%
   unnest(cols = c(data)) %>%
   ungroup() %>%
   relocate(race_eth_s, .before = race_eth_f) %>%
+  relocate(NAME, .before = county_s) %>%
   relocate(state_n, .before = country_n) %>%
   arrange(GEOID, sore)
 
@@ -455,12 +459,12 @@ county_poverty_data <- county_poverty_data %>%
     pE_fmt      = comma(pE),
     pbpE_fmt    = comma(pbpE),
     pbpM_fmt    = comma(pbpM),
-    lpbpE_fmt   = comma(lpbpE),
     upbpE_fmt   = comma(upbpE),
+    lpbpE_fmt   = comma(lpbpE),
     ppbpE_fmt   = percent(ppbpE, accuracy = 0.2),
     ppbpM_fmt   = percent(ppbpM, accuracy = 0.2),
-    lppbpE_fmt  = percent(lppbpE, accuracy = 0.2),
     uppbpE_fmt  = percent(uppbpE, accuracy = 0.2),
+    lppbpE_fmt  = percent(lppbpE, accuracy = 0.2),
     ptt = paste0(
       "<strong>County:</strong> ", county_s, "<br>",
       "<strong>State:</strong> ", state_n, "<br>",
@@ -475,7 +479,7 @@ county_poverty_data <- county_poverty_data %>%
   )
 
 # Convert county_poverty_data to sf object to ensure geometry is sufficiently preserved
-county_poverty_data <- st_as_sf(county_poverty_data) %>%
+county_poverty_data <- st_as_sf(county_poverty_data, crs = 4269) %>%
   st_transform(4326) # Use 4326 CRS (for web mapping)
 
 # ──────────────────────────────────────────────────────────────────────────────
