@@ -478,22 +478,34 @@ county_poverty_data <- county_poverty_data %>%
     )
   )
 
-# Convert county_poverty_data to sf object to ensure geometry is sufficiently preserved
-county_poverty_data <- st_as_sf(county_poverty_data, crs = 4269) %>%
+# ──────────────────────────────────────────────────────────────────────────────
+# SEPARATE GEOMETRY ------------------------------------------------------------
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Move county geometry to standalone sf object
+county_geometry <- county_poverty_data %>%
+  select(GEOID, geometry) %>%
+  distinct() %>%
+  st_as_sf(crs = 4269) %>%
   st_transform(4326) # Use 4326 CRS (for web mapping)
+
+# Remove geometry from county_poverty_data
+county_poverty_data <- county_poverty_data %>%
+  select(-geometry)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SAVE DATASETS ----------------------------------------------------------------
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Save as Parquet
-st_write_parquet(county_poverty_data, "final_data/county_poverty_data.parquet")
-# No geometry data for US and state data, so normal parquet is sufficient
-write_parquet(us_poverty_data, "final_data/us_poverty_data.parquet")
+write_parquet(county_poverty_data, "final_data/county_poverty_data.parquet")
 write_parquet(state_poverty_data, "final_data/state_poverty_data.parquet")
+write_parquet(us_poverty_data, "final_data/us_poverty_data.parquet")
+
+# Save as (Geo)Parquet
+st_write_parquet(county_geometry, "final_data/county_geometry.parquet")
 
 # Save as CSV (may be useful for some users/applications)
-## Drop geometry from county_poverty_data
-write_csv(st_drop_geometry(county_poverty_data), "final_data/county_poverty_data.csv")
-write_csv(us_poverty_data, "final_data/us_poverty_data.csv")
+write_csv(county_poverty_data, "final_data/county_poverty_data.csv")
 write_csv(state_poverty_data, "final_data/state_poverty_data.csv")
+write_csv(us_poverty_data, "final_data/us_poverty_data.csv")
