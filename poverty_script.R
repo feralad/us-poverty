@@ -490,8 +490,10 @@ county_geometry <- county_poverty_data %>%
   st_transform(4326) # Use 4326 CRS (for web mapping)
 
 # Remove geometry from county_poverty_data
-county_poverty_data <- county_poverty_data %>%
-  select(-geometry)
+county_poverty_data <- county_poverty_data %>% 
+  st_drop_geometry() %>%
+  select(-geometry) %>%
+  as.data.frame()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # SAVE DATASETS ----------------------------------------------------------------
